@@ -8,8 +8,8 @@ DOCKER_COMPOSE ?= docker-compose
 # NOTE: use Makefile.local to override the options defined above.
 -include Makefile.local
 
-CMAKE_DEBUG_FLAGS += -DCMAKE_BUILD_TYPE=Debug $(CMAKE_COMMON_FLAGS)
-CMAKE_RELEASE_FLAGS += -DCMAKE_BUILD_TYPE=Release $(CMAKE_COMMON_FLAGS)
+CMAKE_DEBUG_FLAGS += -DCMAKE_cmake-build-TYPE=Debug $(CMAKE_COMMON_FLAGS)
+CMAKE_RELEASE_FLAGS += -DCMAKE_cmake-build-TYPE=Release $(CMAKE_COMMON_FLAGS)
 
 .PHONY: all
 all: test-debug test-release
@@ -18,49 +18,49 @@ all: test-debug test-release
 .PHONY: cmake-debug
 cmake-debug:
 	git submodule update --init
-	cmake -B build_debug $(CMAKE_DEBUG_FLAGS)
+	cmake -B cmake-build-debug $(CMAKE_DEBUG_FLAGS)
 
 .PHONY: cmake-release
 cmake-release:
 	git submodule update --init
-	cmake -B build_release $(CMAKE_RELEASE_FLAGS)
+	cmake -B cmake-build-release $(CMAKE_RELEASE_FLAGS)
 
-build_debug/CMakeCache.txt: cmake-debug
-build_release/CMakeCache.txt: cmake-release
+cmake-build-debug/CMakeCache.txt: cmake-debug
+cmake-build-release/CMakeCache.txt: cmake-release
 
 # Build using cmake
 .PHONY: build-debug build-release
-build-debug build-release: build-%: build_%/CMakeCache.txt
-	cmake --build build_$* -j $(NPROCS) --target service_template
+build-debug build-release: build-%: cmake-build-%/CMakeCache.txt
+	cmake --build cmake-build-$* -j $(NPROCS) --target service_template
 
 # Test
 .PHONY: test-debug test-release
 test-debug test-release: test-%: build-%
-	cmake --build build_$* -j $(NPROCS) --target service_template_unittest
-	cmake --build build_$* -j $(NPROCS) --target service_template_benchmark
-	cd build_$* && ((test -t 1 && GTEST_COLOR=1 PYTEST_ADDOPTS="--color=yes" ctest -V) || ctest -V)
+	cmake --build cmake-build-$* -j $(NPROCS) --target service_template_unittest
+	cmake --build cmake-build-$* -j $(NPROCS) --target service_template_benchmark
+	cd cmake-build-$* && ((test -t 1 && GTEST_COLOR=1 PYTEST_ADDOPTS="--color=yes" ctest -V) || ctest -V)
 	pep8 tests
 
 # Start the service (via testsuite service runner)
 .PHONY: service-start-debug service-start-release
 service-start-debug service-start-release: service-start-%:
-	cmake --build build_$* -v --target=start-service_template
+	cmake --build cmake-build-$* -v --target=start-service_template
 
 # Cleanup data
 .PHONY: clean-debug clean-release
 clean-debug clean-release: clean-%:
-	cmake --build build_$* --target clean
+	cmake --build cmake-build-$* --target clean
 
 .PHONY: dist-clean
 dist-clean:
-	rm -rf build_*
+	rm -rf cmake-build-*
 	rm -rf tests/__pycache__/
 	rm -rf tests/.pytest_cache/
 
 # Install
 .PHONY: install-debug install-release
 install-debug install-release: install-%: build-%
-	cmake --install build_$* -v --component service_template
+	cmake --install cmake-build-$* -v --component service_template
 
 .PHONY: install
 install: install-release

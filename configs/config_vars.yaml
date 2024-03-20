@@ -4,4 +4,4 @@ logger-level: debug
 
 is_testing: false
 
-server-port: 8080
+server-port: 6000
